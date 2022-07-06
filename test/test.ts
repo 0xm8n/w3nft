@@ -186,7 +186,7 @@ describe("W3NFT", () => {
       testSC.connect(owner).mintToken(wantMint, wl1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("whitelist not enabled");
+    ).to.be.revertedWith("Signed not enabled");
   });
 
   it("fail> not whitelist/invalid signature", async () => {
@@ -195,7 +195,7 @@ describe("W3NFT", () => {
     const curTime = block.timestamp;
     console.log("current time:", BigNumber.from(curTime));
 
-    await testSC.connect(owner).setWhitelistSigningAddress(owner.address);
+    await testSC.connect(owner).setSigningAddress(owner.address);
     const curState = await testSC.getState();
     console.log("current state:", curState);
     const curPhase = await testSC.salePhase();
@@ -835,7 +835,7 @@ async function signWhitelist(chainId: number, contractAddress: string, whitelist
   // Domain data should match whats specified in the DOMAIN_SEPARATOR constructed in the contract
   // https://github.com/msfeldstein/EIP712-whitelisting/blob/main/contracts/EIP712Whitelisting.sol#L33-L43
   const domain = {
-    name: "WhitelistToken",
+    name: "SignedData",
     version: "1",
     chainId,
     verifyingContract: contractAddress,

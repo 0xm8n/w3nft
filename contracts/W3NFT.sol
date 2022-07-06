@@ -2,18 +2,17 @@
 pragma solidity ^0.8.9;
 
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "./TimeMint.sol";
-import "./lib/EIP712Whitelisting.sol";
+import "./lib/EIP712Signing.sol";
 
 contract W3NFT is
     ERC721AQueryable,
     VRFConsumerBaseV2,
-    EIP712Whitelisting,
+    EIP712Signing,
     TimeMint
 {
     using Address for address;
@@ -67,31 +66,32 @@ contract W3NFT is
     {
         SaleState _saleState = getState();
         if (_saleState == SaleState.PrivateOn) {
-            require(isEIP712WhiteListed(signature), "Not whitelisted");
+            require(isEIP712Signed(signature), "Not whitelisted");
             _setAux(msg.sender, uint64(_getAux(msg.sender) + amount));
             privateMinted += amount;
         }
         if (_saleState == SaleState.PublicOn) {
-            if (qBaseMint) require(isEIP712WhiteListed(signature), "Not Queued");
+            if (qBaseMint) require(isEIP712Signed(signature), "Not Queued");
             publicMinted += amount;
         }
         _mint(msg.sender, amount);
     }
     
     function airdrop(address[] memory addresses, uint256 amount) external onlyOwner {
+        uint256 totalAirdrop = addresses.length * amount;
         require(
-            _totalMinted() + (addresses.length * amount) <= MAX_SUPPLY,
-            "Exceed max supply limit"
+            reserveMinted + totalAirdrop <= maxReserve,
+            "Insufficient reserve"
         );
         require(
-            reserveMinted + (addresses.length * amount) <= maxReserve,
-            "Insufficient reserve"
+            _totalMinted() + totalAirdrop <= MAX_SUPPLY,
+            "Exceed max supply limit"
         );
 
         for (uint256 i = 0; i < addresses.length; ++i) {
             _mint(addresses[i], amount);
         }
-        reserveMinted += (addresses.length * amount);
+        reserveMinted += totalAirdrop;
     }
 
     function setBaseURI(string memory uri) external onlyOwner {
