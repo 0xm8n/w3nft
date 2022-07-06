@@ -88,7 +88,7 @@ contract W3NFT is
             "Insufficient reserve"
         );
 
-        for (uint256 i = 0; i < addresses.length; i++) {
+        for (uint256 i = 0; i < addresses.length; ++i) {
             _mint(addresses[i], amount);
         }
         reserveMinted += (addresses.length * amount);
@@ -162,10 +162,10 @@ contract W3NFT is
         if (randSeed == 0) return "pre";
 
         uint256[] memory metadata = new uint256[](maxSupply+1);
-        for (uint256 i = 1; i <= maxSupply ; i++) {
+        for (uint256 i = 1; i <= maxSupply ; ++i) {
             metadata[i] = i;
         }
-        for (uint256 j = vaultReserve+1; j <= maxSupply ; j++) {
+        for (uint256 j = vaultReserve+1; j <= maxSupply ; ++j) {
             uint256 k = ((randSeed/j) % maxSupply)+1;
             if(k > vaultReserve){
                 (metadata[j], metadata[k]) = (metadata[k], metadata[j]);
