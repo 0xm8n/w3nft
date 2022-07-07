@@ -40,14 +40,12 @@ contract TimeMint is Ownable {
     uint256 internal maxPublicWallet = 3;
     uint256 internal maxPrivateTx = 3;
     uint256 internal maxPublicTx = 3;
-    uint256 public reduceTime = 20; // 20 min
     uint256 public privatePrice = 100000000000000000; // 0.10
-    uint256 public endPrice = 150000000000000000; // 0.15 
+    uint256 public endPrice = 150000000000000000; // 0.15 DA or Public
     uint256 public startPrice = 1000000000000000000; // 1.00
     uint256 public reducePrice = 50000000000000000; // 0.05
+    uint256 public reduceTime = 20; // 20 min
 
-    uint256 public privateMinted;
-    uint256 public publicMinted;
     uint256 public reserveMinted;
     uint256 public maxReserve = 200;
 
@@ -55,16 +53,14 @@ contract TimeMint is Ownable {
         require(_beginTime > block.timestamp, "begin time must in future");
         require(_minLong > 0, "minutes long must > 0");
         salePhase = SalePhase.Private;
-        privateSale.beginTime = _beginTime;
-        privateSale.endTime = _beginTime + (_minLong*60);
+        privateSale = SaleConfig(_beginTime, _beginTime + (_minLong*60));
     }
 
     function enablePublic(uint256 _beginTime, uint256 _minLong) external onlyOwner {
         require(_beginTime > block.timestamp, "begin time must in future");
         require(_minLong > 0, "minutes long must > 0");
         salePhase = SalePhase.Public;
-        publicSale.beginTime = _beginTime;
-        publicSale.endTime = _beginTime + (_minLong*60);
+        publicSale = SaleConfig(_beginTime, _beginTime + (_minLong*60));
     }
 
     function togglePrivateDA() external onlyOwner {
@@ -126,37 +122,6 @@ contract TimeMint is Ownable {
         saleState = SaleState.NotStarted;
     }
 
-    function isPrivateSoldOut() internal view returns (bool) {
-        return privateMinted == MAX_PRIVATE;
-    }
-
-    function isPublicSoldOut() internal view returns (bool) {
-        return publicMinted == MAX_SUPPLY - maxReserve - privateMinted;
-    }
-
-    function getState() public view returns (SaleState) {
-        SalePhase phase = salePhase;
-        SaleState state = saleState;
-        if ( state == SaleState.Close ) return SaleState.Close;
-        if ( state == SaleState.Paused ) return SaleState.Paused;
-        uint256 blockTime = block.timestamp;
-        if ( phase == SalePhase.Private ) {
-            if ( isPrivateSoldOut()) return SaleState.SoldOut;
-            uint256 endTime = privateSale.endTime;
-            if ( endTime > 0 && blockTime > endTime ) return SaleState.Close;
-            uint256 beginTime = privateSale.beginTime;
-            if ( beginTime > 0 && blockTime >= beginTime ) return SaleState.PrivateOn;
-        }
-        if ( phase == SalePhase.Public ) {
-            if ( isPublicSoldOut() ) return SaleState.SoldOut;
-            uint256 endTime = publicSale.endTime;
-            if ( endTime > 0 && blockTime > endTime ) return SaleState.Close;
-            uint256 beginTime = publicSale.beginTime;
-            if ( beginTime > 0 && blockTime >= beginTime ) return SaleState.PublicOn;
-        }
-        return SaleState.NotStarted;
-    }
-
     function priceByMode() public view returns (uint256) {
         SalePhase phase = salePhase;
         uint256 blockTime = block.timestamp;
@@ -178,27 +143,5 @@ contract TimeMint is Ownable {
         uint256 discountPrice = (passedTime/(reduceTime*60)) * reducePrice;
         if (startPrice - endPrice < discountPrice) return endPrice;
         return startPrice - discountPrice;
-    }
-
-    function cappedByMode() public view returns (uint256) {
-        if (salePhase == SalePhase.Private) return MAX_PRIVATE;
-        if (salePhase == SalePhase.Public)
-            return MAX_SUPPLY - privateMinted - maxReserve;
-        return 0;
-    }
-
-    function mintedByMode() public view returns (uint256) {
-        if (salePhase == SalePhase.Private) return privateMinted;
-        if (salePhase == SalePhase.Public) return publicMinted;
-        return 0;
-    }
-    
-    function txCappedByMode() public view returns (uint256) {
-        return salePhase == SalePhase.Private ? maxPrivateTx : maxPublicTx;
-    }
-
-    function walletCappedByMode() public view returns (uint256) {
-        return
-            salePhase == SalePhase.Private ? maxPrivateWallet : maxPublicWallet;
     }
 }

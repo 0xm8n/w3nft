@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "./TimeMint.sol";
-import "./lib/EIP712Signing.sol";
+import "./lib/EIP712Signed.sol";
 
 contract W3NFT is
     ERC721AQueryable,
     VRFConsumerBaseV2,
-    EIP712Signing,
+    EIP712Signed,
     TimeMint
 {
     using Address for address;
@@ -49,49 +49,43 @@ contract W3NFT is
         teamWallet = wallet;
     }
 
-    modifier secureMint(uint256 amount) {
+    function mintToken(uint256 amount, bytes calldata signature)
+        external payable
+    {
         require(!msg.sender.isContract(), "Contract is not allowed");
         SaleState _saleState = getState();
         require( _saleState == SaleState.PrivateOn || _saleState == SaleState.PublicOn, "Sale not available");
-        require(_totalMinted() + amount <= MAX_SUPPLY, "Exceed max supply");
-        require(amount <= txCappedByMode(), "Exceed transaction limit");
-        require(!isWalletCappedByMode(msg.sender, amount), "Exceed wallet limit");
-        require(msg.value >= amount * priceByMode(), "Insufficient funds");
-        require(mintedByMode() + amount <= cappedByMode(), "Purchase exceed sale capped");
-        _;
-    }
+        unchecked {
+            require(isTxValid(msg.sender, amount), "Exceed limit");
+            require(msg.value >= amount * priceByMode(), "Insufficient funds");
 
-    function mintToken(uint256 amount, bytes calldata signature)
-        external payable secureMint(amount)
-    {
-        SaleState _saleState = getState();
-        if (_saleState == SaleState.PrivateOn) {
-            require(isEIP712Signed(signature), "Not whitelisted");
-            _setAux(msg.sender, uint64(_getAux(msg.sender) + amount));
-            privateMinted += amount;
-        }
-        if (_saleState == SaleState.PublicOn) {
-            if (qBaseMint) require(isEIP712Signed(signature), "Not Queued");
-            publicMinted += amount;
+            if (_saleState == SaleState.PrivateOn) {
+                require(isEIP712Signed(signature), "Not whitelisted");
+                _setAux(msg.sender, uint64(_getAux(msg.sender) + amount));
+            }
+            if (_saleState == SaleState.PublicOn) {
+                if (qBaseMint) require(isEIP712Signed(signature), "Not Queued");
+            }
         }
         _mint(msg.sender, amount);
     }
     
     function airdrop(address[] memory addresses, uint256 amount) external onlyOwner {
-        uint256 totalAirdrop = addresses.length * amount;
-        require(
-            reserveMinted + totalAirdrop <= maxReserve,
-            "Insufficient reserve"
-        );
-        require(
-            _totalMinted() + totalAirdrop <= MAX_SUPPLY,
-            "Exceed max supply limit"
-        );
-
+        unchecked {
+            uint256 totalAirdrop = addresses.length * amount;
+            require(
+                reserveMinted + totalAirdrop <= maxReserve,
+                "Insufficient reserve"
+            );
+            require(
+                _totalMinted() + totalAirdrop <= MAX_SUPPLY,
+                "Exceed max supply"
+            );
+            reserveMinted += totalAirdrop;
+        }
         for (uint256 i = 0; i < addresses.length; ++i) {
             _mint(addresses[i], amount);
         }
-        reserveMinted += totalAirdrop;
     }
 
     function setBaseURI(string memory uri) external onlyOwner {
@@ -147,6 +141,49 @@ contract W3NFT is
     function setTeamWallet(address wallet) external onlyOwner {
         teamWallet = wallet;
     }
+    
+    function isTxValid(address wallet, uint256 amount) public view returns (bool) {
+        if(salePhase == SalePhase.Private){
+            if(amount > maxPrivateTx) return false;
+            if(_getAux(wallet) + amount > maxPrivateWallet) return false;
+            if(_totalMinted() - reserveMinted + amount > MAX_PRIVATE) return false;
+        }
+        if(salePhase == SalePhase.Public){
+            if(amount > maxPublicTx) return false;
+            if(_numberMinted(wallet) - _getAux(wallet) + amount > maxPublicWallet) return false;
+            if(_totalMinted() - reserveMinted + maxReserve + amount > MAX_SUPPLY) return false;
+        }
+        return true;
+    }
+
+    function isSoldOut() public view returns (bool) {
+        SalePhase phase = salePhase;
+        if (phase == SalePhase.Private) return _totalMinted() - reserveMinted >= MAX_PRIVATE;
+        if (phase == SalePhase.Public) return _totalMinted() - reserveMinted + maxReserve >= MAX_SUPPLY;
+        return false;
+    }
+
+    function getState() public view returns (SaleState) {
+        SalePhase phase = salePhase;
+        SaleState state = saleState;
+        if ( state == SaleState.Close ) return SaleState.Close;
+        if ( state == SaleState.Paused ) return SaleState.Paused;
+        if ( isSoldOut() ) return SaleState.SoldOut;
+        uint256 blockTime = block.timestamp;
+        if ( phase == SalePhase.Private ) {
+            uint256 endTime = privateSale.endTime;
+            if ( endTime > 0 && blockTime > endTime ) return SaleState.Close;
+            uint256 beginTime = privateSale.beginTime;
+            if ( beginTime > 0 && blockTime >= beginTime ) return SaleState.PrivateOn;
+        }
+        if ( phase == SalePhase.Public ) {
+            uint256 endTime = publicSale.endTime;
+            if ( endTime > 0 && blockTime > endTime ) return SaleState.Close;
+            uint256 beginTime = publicSale.beginTime;
+            if ( beginTime > 0 && blockTime >= beginTime ) return SaleState.PublicOn;
+        }
+        return SaleState.NotStarted;
+    }
 
     function _startTokenId() internal view override virtual returns (uint256) {
         return 1;
@@ -184,20 +221,12 @@ contract W3NFT is
             )) : preURI;
     }
 
-    function availableReserve() public view returns (uint256) {
-        return maxReserve - reserveMinted;
+    function numberMinted(address wallet) public view returns (uint256) {
+        return _numberMinted(wallet);
     }
 
-    function availableForSale() external view returns (uint256) {
-        return MAX_SUPPLY - _totalMinted();
-    }
-
-    function isWalletCappedByMode(address wallet, uint256 amount) public view returns (bool) {
-        SalePhase phase = salePhase;
-        if (phase == SalePhase.Private) return _getAux(wallet) + amount > maxPrivateWallet;
-        // Public limit count include airdrop.
-        if (phase == SalePhase.Public) return _numberMinted(wallet) - _getAux(wallet) + amount > maxPublicWallet;
-        return false;
+    function privateMinted(address wallet) public view returns (uint256) {
+        return _getAux(wallet);
     }
 
 }

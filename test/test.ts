@@ -9,17 +9,21 @@ dotenv.config();
 
 describe("W3NFT", () => {
   let testSC: W3NFT;
-  let wl1Sig: string;
-  let wl2Sig: string;
+  let ownerSig: string;
+  let otherSig: string;
+  let addr1Sig: string;
+  let addr2Sig: string;
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
+  let addr1: SignerWithAddress;
+  let addr2: SignerWithAddress;
   let cap: BigNumber;
   let reserved: BigNumber;
 
   // Configure
   before(async () => {
     console.log(" ");
-    [owner, other] = await ethers.getSigners();
+    [owner, other, addr1, addr2] = await ethers.getSigners();
     console.log("owner: ", owner.address);
 
     const TestSC = await ethers.getContractFactory("W3NFT");
@@ -31,7 +35,7 @@ describe("W3NFT", () => {
       {
         coordinator: "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
         keyHash: "0x8af398995b04c28e9951adb9721ef74c74f93e6a478f39e7e0777be13527e7ef",
-        subId: "3021"
+        subId: "3021",
       },
       owner.address
     );
@@ -48,8 +52,10 @@ describe("W3NFT", () => {
     const netId = 31337;
     console.log("chain ID:", netId);
 
-    wl1Sig = await signWhitelist(netId, testSC.address, owner, owner.address);
-    wl2Sig = await signWhitelist(netId, testSC.address, owner, other.address);
+    ownerSig = await signWhitelist(netId, testSC.address, owner, owner.address);
+    otherSig = await signWhitelist(netId, testSC.address, owner, other.address);
+    addr1Sig = await signWhitelist(netId, testSC.address, owner, addr1.address);
+    addr2Sig = await signWhitelist(netId, testSC.address, owner, addr2.address);
   });
 
   // #################################################
@@ -120,7 +126,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Sale not available");
@@ -148,8 +154,6 @@ describe("W3NFT", () => {
     console.log("current state:", curState);
     const curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
-    const curLimit = await testSC.walletCappedByMode();
-    console.log("current limit:", curLimit);
 
     const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(1);
@@ -157,7 +161,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Sale not available");
@@ -174,8 +178,6 @@ describe("W3NFT", () => {
     console.log("current state:", curState);
     const curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
-    const curLimit = await testSC.walletCappedByMode();
-    console.log("current limit:", curLimit);
 
     const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(1);
@@ -183,7 +185,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Signed not enabled");
@@ -200,8 +202,6 @@ describe("W3NFT", () => {
     console.log("current state:", curState);
     const curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
-    const curLimit = await testSC.walletCappedByMode();
-    console.log("current limit:", curLimit);
 
     const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(1);
@@ -209,7 +209,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr1).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Not whitelisted");
@@ -227,8 +227,6 @@ describe("W3NFT", () => {
     console.log("current state:", curState);
     const curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
-    const curLimit = await testSC.walletCappedByMode();
-    console.log("current limit:", curLimit);
 
     const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(4);
@@ -236,10 +234,10 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed transaction limit");
+    ).to.be.revertedWith("Exceed limit");
   });
 
   it("fail> exceed max supply", async () => {
@@ -259,10 +257,10 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed max supply");
+    ).to.be.revertedWith("Exceed limit");
   });
 
   it("pass> mint 1 token whitelist", async () => {
@@ -274,18 +272,16 @@ describe("W3NFT", () => {
     console.log("current state:", curState);
     const curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
-    const curLimit = await testSC.walletCappedByMode();
-    console.log("current limit:", curLimit);
 
     const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(1);
     console.log("sale price:", BigNumber.from(mintPrice));
     console.log("want mint:", BigNumber.from(wantMint));
 
-    await testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+    await testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
       value: mintPrice.mul(wantMint),
     });
-    const minted = await testSC.privateMinted();
+    const minted = await testSC.privateMinted(addr1.address);
     expect(minted).equal(BigNumber.from(1));
   });
 
@@ -305,7 +301,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(1),
       })
     ).to.be.revertedWith("Insufficient funds");
@@ -326,11 +322,11 @@ describe("W3NFT", () => {
     console.log("sale price:", BigNumber.from(mintPrice));
     console.log("want mint:", BigNumber.from(wantMint));
 
-    await testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+    await testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
       value: mintPrice.mul(wantMint),
     });
 
-    const minted = await testSC.privateMinted();
+    const minted = await testSC.privateMinted(addr1.address);
     expect(minted).equal(BigNumber.from(3));
   });
 
@@ -350,10 +346,10 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+      testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed wallet limit");
+    ).to.be.revertedWith("Exceed limit");
   });
 
   it("fail> sale not available due to after end block", async () => {
@@ -374,13 +370,13 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(other).mintToken(wantMint, wl2Sig, {
+      testSC.connect(other).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Sale not available");
   });
 
-  it("pass> private sale soldout", async () => {
+  it("fail> Exceed private sale limit", async () => {
     let blockNum = await ethers.provider.getBlockNumber();
     let block = await ethers.provider.getBlock(blockNum);
     let curTime = block.timestamp;
@@ -393,7 +389,7 @@ describe("W3NFT", () => {
 
     const limit = BigNumber.from(3);
     const maxPrivate = await testSC.MAX_PRIVATE();
-    await testSC.connect(owner).setTransactionLimit(maxPrivate, limit, maxPrivate, limit);
+    await testSC.connect(owner).setTransactionLimit(maxPrivate.add(1), limit, maxPrivate.add(1), limit);
 
     const beginTime = BigNumber.from(curTime).add(5);
     const minLong = BigNumber.from(1);
@@ -415,18 +411,53 @@ describe("W3NFT", () => {
     curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
 
-    const privateMinted = await testSC.privateMinted();
+    const mintPrice = await testSC.priceByMode();
+    const wantMint = BigNumber.from(maxPrivate);
+    console.log("sale price:", BigNumber.from(mintPrice));
+    console.log("want mint:", BigNumber.from(wantMint));
+
+    await expect(
+      testSC.connect(owner).mintToken(wantMint, ownerSig, {
+        value: mintPrice.mul(wantMint),
+      })
+    ).to.be.revertedWith("Exceed limit");
+  });
+
+  it("pass> private sale soldout", async () => {
+    const blockNum = await ethers.provider.getBlockNumber();
+    const block = await ethers.provider.getBlock(blockNum);
+    const curTime = block.timestamp;
+    console.log("current time:", BigNumber.from(curTime));
+
+    let curState = await testSC.getState();
+    console.log("current state:", curState);
+    let curPhase = await testSC.salePhase();
+    console.log("current phase:", curPhase);
+
+    const maxPrivate = await testSC.MAX_PRIVATE();
+    const privateMinted = await testSC.privateMinted(addr1.address);
     const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(maxPrivate.sub(privateMinted));
     console.log("sale price:", BigNumber.from(mintPrice));
     console.log("want mint:", BigNumber.from(wantMint));
 
-    await testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+    await testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
       value: mintPrice.mul(wantMint),
     });
 
-    const minted = await testSC.privateMinted();
+    curState = await testSC.getState();
+    console.log("current state:", curState);
+    curPhase = await testSC.salePhase();
+    console.log("current phase:", curPhase);
+
+    const minted = await testSC.privateMinted(addr1.address);
     expect(minted).equal(maxPrivate);
+
+    await expect(
+      testSC.connect(other).mintToken(BigNumber.from(1), otherSig, {
+        value: mintPrice.mul(1),
+      })
+    ).to.be.revertedWith("Sale not available");
 
     increaseTime(1 * 60);
 
@@ -459,7 +490,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Sale not available");
@@ -495,7 +526,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Sale not available");
@@ -520,10 +551,10 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed transaction limit");
+    ).to.be.revertedWith("Exceed limit");
   });
 
   it("pass> mint 1 token public", async () => {
@@ -541,11 +572,13 @@ describe("W3NFT", () => {
     console.log("sale price:", BigNumber.from(mintPrice));
     console.log("want mint:", BigNumber.from(wantMint));
 
-    await testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+    await testSC.connect(addr2).mintToken(wantMint, otherSig, {
       value: mintPrice.mul(wantMint),
     });
-    const minted = await testSC.publicMinted();
-    expect(minted).equal(BigNumber.from(1));
+    const minted = await testSC.numberMinted(addr2.address);
+    const pvMinted = await testSC.privateMinted(addr2.address);
+    const difMinted = minted.sub(pvMinted);
+    expect(difMinted).equal(BigNumber.from(1));
   });
 
   it("fail> Insufficient funds", async () => {
@@ -564,7 +597,7 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(1),
       })
     ).to.be.revertedWith("Insufficient funds");
@@ -595,12 +628,14 @@ describe("W3NFT", () => {
     console.log("sale price:", BigNumber.from(mintPrice));
     console.log("want mint:", BigNumber.from(wantMint));
 
-    await testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+    await testSC.connect(addr2).mintToken(wantMint, otherSig, {
       value: mintPrice.mul(wantMint),
     });
 
-    const minted = await testSC.publicMinted();
-    expect(minted).equal(BigNumber.from(3));
+    const minted = await testSC.numberMinted(addr2.address);
+    const pvMinted = await testSC.privateMinted(addr2.address);
+    const difMinted = minted.sub(pvMinted);
+    expect(difMinted).equal(BigNumber.from(3));
   });
 
   it("fail> Mint limit per wallet exceeded", async () => {
@@ -619,10 +654,10 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(owner).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed wallet limit");
+    ).to.be.revertedWith("Exceed limit");
   });
 
   it("fail> sale not available due to after end block", async () => {
@@ -644,13 +679,13 @@ describe("W3NFT", () => {
     console.log("want mint:", BigNumber.from(wantMint));
 
     await expect(
-      testSC.connect(other).mintToken(wantMint, wl2Sig, {
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
     ).to.be.revertedWith("Sale not available");
   });
 
-  it("pass> public sale soldout", async () => {
+  it("fail> exceed max supply", async () => {
     let blockNum = await ethers.provider.getBlockNumber();
     let block = await ethers.provider.getBlock(blockNum);
     let curTime = block.timestamp;
@@ -690,16 +725,51 @@ describe("W3NFT", () => {
 
     const totalSupply = await testSC.totalSupply();
     const mintPrice = await testSC.priceByMode();
+    const wantMint = BigNumber.from(cap.sub(totalSupply).add(1));
+    console.log("sale price:", BigNumber.from(mintPrice));
+    console.log("want mint:", BigNumber.from(wantMint));
+
+    await expect(
+      testSC.connect(addr2).mintToken(wantMint, otherSig, {
+        value: mintPrice.mul(wantMint),
+      })
+    ).to.be.revertedWith("Exceed limit");
+  });
+
+  it("pass> public sale soldout", async () => {
+    const blockNum = await ethers.provider.getBlockNumber();
+    const block = await ethers.provider.getBlock(blockNum);
+    const curTime = block.timestamp;
+    console.log("current time:", BigNumber.from(curTime));
+
+    let curState = await testSC.getState();
+    console.log("current state:", curState);
+    let curPhase = await testSC.salePhase();
+    console.log("current phase:", curPhase);
+
+    const totalSupply = await testSC.totalSupply();
+    const mintPrice = await testSC.priceByMode();
     const wantMint = BigNumber.from(cap.sub(totalSupply));
     console.log("sale price:", BigNumber.from(mintPrice));
     console.log("want mint:", BigNumber.from(wantMint));
 
-    await testSC.connect(owner).mintToken(wantMint, wl1Sig, {
+    await testSC.connect(addr2).mintToken(wantMint, otherSig, {
       value: mintPrice.mul(wantMint),
     });
 
+    curState = await testSC.getState();
+    console.log("current state:", curState);
+    curPhase = await testSC.salePhase();
+    console.log("current phase:", curPhase);
+
     const minted = await testSC.totalSupply();
     expect(minted).equal(cap);
+
+    await expect(
+      testSC.connect(other).mintToken(BigNumber.from(1), otherSig, {
+        value: mintPrice.mul(1),
+      })
+    ).to.be.revertedWith("Sale not available");
 
     increaseTime(1 * 60);
 
@@ -833,16 +903,14 @@ describe("W3NFT", () => {
 
 async function signWhitelist(chainId: number, contractAddress: string, whitelistKey: SignerWithAddress, mintingAddress: string): Promise<string> {
   // Domain data should match whats specified in the DOMAIN_SEPARATOR constructed in the contract
-  // https://github.com/msfeldstein/EIP712-whitelisting/blob/main/contracts/EIP712Whitelisting.sol#L33-L43
   const domain = {
-    name: "SignedData",
+    name: "EIP712SignedData",
     version: "1",
     chainId,
     verifyingContract: contractAddress,
   };
 
   // The types should match the TYPEHASH specified in the contract
-  // https://github.com/msfeldstein/EIP712-whitelisting/blob/main/contracts/EIP712Whitelisting.sol#L27-L28
   const types = {
     Minter: [{ name: "wallet", type: "address" }],
   };
