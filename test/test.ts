@@ -12,7 +12,6 @@ describe("W3NFT", () => {
   let ownerSig: string;
   let otherSig: string;
   let addr1Sig: string;
-  let addr2Sig: string;
   let owner: SignerWithAddress;
   let other: SignerWithAddress;
   let addr1: SignerWithAddress;
@@ -55,7 +54,6 @@ describe("W3NFT", () => {
     ownerSig = await signWhitelist(netId, testSC.address, owner, owner.address);
     otherSig = await signWhitelist(netId, testSC.address, owner, other.address);
     addr1Sig = await signWhitelist(netId, testSC.address, owner, addr1.address);
-    addr2Sig = await signWhitelist(netId, testSC.address, owner, addr2.address);
   });
 
   // #################################################
@@ -807,98 +805,98 @@ describe("W3NFT", () => {
   // #################################################
   // Seed and metaId
   // #################################################
-  it("pass> setManualSeed", async () => {
-    console.log("###### START RANDOM METADATA ID TEST ##########");
-    const blockNum = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNum);
-    const curTime = block.timestamp;
-    const preURI = "https://gateway.pinata.cloud/ipfs/QmPUHWLrMCyWtLzBKG9nHWzm3Mmyz8wSHvEcTTuggvmnne";
-    const baseURI = "https://gateway.pinata.cloud/ipfs/QmZwj1Td1moto6w728LhDMcEZvrAK6DGAoC8Cftq5W5ojP/";
-    console.log("current time:", BigNumber.from(curTime));
-    await testSC.connect(owner).setPreURI(preURI);
-    await testSC.connect(owner).setBaseURI(baseURI);
-    await testSC.connect(owner).randomSeed(6354725381);
-    const seed = await testSC.seed();
-    console.log("seed:", seed);
-    const metaId = await testSC.metaId(2345);
-    console.log("metaId (2345):", metaId);
-    expect(metaId).not.equal(2345);
+  // it("pass> setManualSeed", async () => {
+  //   console.log("###### START RANDOM METADATA ID TEST ##########");
+  //   const blockNum = await ethers.provider.getBlockNumber();
+  //   const block = await ethers.provider.getBlock(blockNum);
+  //   const curTime = block.timestamp;
+  //   const preURI = "https://gateway.pinata.cloud/ipfs/QmPUHWLrMCyWtLzBKG9nHWzm3Mmyz8wSHvEcTTuggvmnne";
+  //   const baseURI = "https://gateway.pinata.cloud/ipfs/QmZwj1Td1moto6w728LhDMcEZvrAK6DGAoC8Cftq5W5ojP/";
+  //   console.log("current time:", BigNumber.from(curTime));
+  //   await testSC.connect(owner).setPreURI(preURI);
+  //   await testSC.connect(owner).setBaseURI(baseURI);
+  //   await testSC.connect(owner).randomSeed(6354725381);
+  //   const seed = await testSC.seed();
+  //   console.log("seed:", seed);
+  //   const metaId = await testSC.metaId(2345);
+  //   console.log("metaId (2345):", metaId);
+  //   expect(metaId).not.equal(2345);
 
-    const tokenURI = await testSC.tokenURI(2345);
-    console.log("tokenURI (2345):", tokenURI);
-    expect(tokenURI).equal(preURI);
-  });
+  //   const tokenURI = await testSC.tokenURI(2345);
+  //   console.log("tokenURI (2345):", tokenURI);
+  //   expect(tokenURI).equal(preURI);
+  // });
 
-  it("pass> revealed", async () => {
-    const blockNum = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNum);
-    const curTime = block.timestamp;
-    console.log("current time:", BigNumber.from(curTime));
-    const baseURI = await testSC.baseURI();
-    console.log("baseURI:", baseURI);
-    let revealed = await testSC.revealed();
-    console.log("revealed before:", revealed);
-    await testSC.connect(owner).reveal();
-    revealed = await testSC.revealed();
-    console.log("revealed after:", revealed);
-    const metaId = await testSC.metaId(6758);
-    console.log("metaId (6758):", metaId);
-    expect(metaId).not.equal("6758");
-    const tokenURI = await testSC.tokenURI(6758);
-    console.log("tokenURI (6758):", tokenURI);
-    expect(tokenURI).contain(baseURI);
-  });
+  // it("pass> revealed", async () => {
+  //   const blockNum = await ethers.provider.getBlockNumber();
+  //   const block = await ethers.provider.getBlock(blockNum);
+  //   const curTime = block.timestamp;
+  //   console.log("current time:", BigNumber.from(curTime));
+  //   const baseURI = await testSC.baseURI();
+  //   console.log("baseURI:", baseURI);
+  //   let revealed = await testSC.revealed();
+  //   console.log("revealed before:", revealed);
+  //   await testSC.connect(owner).reveal();
+  //   revealed = await testSC.revealed();
+  //   console.log("revealed after:", revealed);
+  //   const metaId = await testSC.metaId(6758);
+  //   console.log("metaId (6758):", metaId);
+  //   expect(metaId).not.equal("6758");
+  //   const tokenURI = await testSC.tokenURI(6758);
+  //   console.log("tokenURI (6758):", tokenURI);
+  //   expect(tokenURI).contain(baseURI);
+  // });
 
-  it("pass> get last id URI", async () => {
-    const blockNum = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNum);
-    const curTime = block.timestamp;
-    console.log("current time:", BigNumber.from(curTime));
-    const baseURI = await testSC.baseURI();
-    console.log("baseURI:", baseURI);
-    const metaId = await testSC.metaId(10000);
-    console.log("metaId (10000):", metaId);
-    expect(metaId).not.equal("10000");
-    const tokenURI = await testSC.tokenURI(10000);
-    console.log("tokenURI (10000):", tokenURI);
-    expect(tokenURI).contain(baseURI);
-  });
+  // it("pass> get last id URI", async () => {
+  //   const blockNum = await ethers.provider.getBlockNumber();
+  //   const block = await ethers.provider.getBlock(blockNum);
+  //   const curTime = block.timestamp;
+  //   console.log("current time:", BigNumber.from(curTime));
+  //   const baseURI = await testSC.baseURI();
+  //   console.log("baseURI:", baseURI);
+  //   const metaId = await testSC.metaId(10000);
+  //   console.log("metaId (10000):", metaId);
+  //   expect(metaId).not.equal("10000");
+  //   const tokenURI = await testSC.tokenURI(10000);
+  //   console.log("tokenURI (10000):", tokenURI);
+  //   expect(tokenURI).contain(baseURI);
+  // });
 
-  it("pass> get vault reserve URI", async () => {
-    const blockNum = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNum);
-    const curTime = block.timestamp;
-    console.log("current time:", BigNumber.from(curTime));
-    const baseURI = await testSC.baseURI();
-    console.log("baseURI:", baseURI);
-    const vaultReserve = await testSC.VAULT_RESERVE();
-    console.log("vaultReserve:", vaultReserve);
-    for (let i = 1; i <= vaultReserve.toNumber(); i++) {
-      const metaId = await testSC.metaId(i);
-      console.log("metaId (", i, "): ", metaId);
-      expect(metaId).equal(i.toString());
-      const tokenURI = await testSC.tokenURI(i);
-      console.log("tokenURI (", i, "): ", tokenURI);
-      expect(tokenURI).equal(`${baseURI}${i.toString()}.json`);
-    }
-  });
+  // it("pass> get vault reserve URI", async () => {
+  //   const blockNum = await ethers.provider.getBlockNumber();
+  //   const block = await ethers.provider.getBlock(blockNum);
+  //   const curTime = block.timestamp;
+  //   console.log("current time:", BigNumber.from(curTime));
+  //   const baseURI = await testSC.baseURI();
+  //   console.log("baseURI:", baseURI);
+  //   const vaultReserve = await testSC.VAULT_RESERVE();
+  //   console.log("vaultReserve:", vaultReserve);
+  //   for (let i = 1; i <= vaultReserve.toNumber(); i++) {
+  //     const metaId = await testSC.metaId(i);
+  //     console.log("metaId (", i, "): ", metaId);
+  //     expect(metaId).equal(i.toString());
+  //     const tokenURI = await testSC.tokenURI(i);
+  //     console.log("tokenURI (", i, "): ", tokenURI);
+  //     expect(tokenURI).equal(`${baseURI}${i.toString()}.json`);
+  //   }
+  // });
 
-  it("pass> get first after vault reserve URI", async () => {
-    const blockNum = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNum);
-    const curTime = block.timestamp;
-    console.log("current time:", BigNumber.from(curTime));
-    const baseURI = await testSC.baseURI();
-    console.log("baseURI:", baseURI);
-    const firstAfterVault = (await testSC.VAULT_RESERVE()).toNumber() + 1;
-    console.log("firstAfterVault:", firstAfterVault);
-    const metaId = await testSC.metaId(firstAfterVault);
-    console.log("metaId (", firstAfterVault, "): ", metaId);
-    expect(metaId).not.equal(firstAfterVault.toString());
-    const tokenURI = await testSC.tokenURI(firstAfterVault);
-    console.log("tokenURI (", firstAfterVault, "): ", tokenURI);
-    expect(tokenURI).contain(baseURI);
-  });
+  // it("pass> get first after vault reserve URI", async () => {
+  //   const blockNum = await ethers.provider.getBlockNumber();
+  //   const block = await ethers.provider.getBlock(blockNum);
+  //   const curTime = block.timestamp;
+  //   console.log("current time:", BigNumber.from(curTime));
+  //   const baseURI = await testSC.baseURI();
+  //   console.log("baseURI:", baseURI);
+  //   const firstAfterVault = (await testSC.VAULT_RESERVE()).toNumber() + 1;
+  //   console.log("firstAfterVault:", firstAfterVault);
+  //   const metaId = await testSC.metaId(firstAfterVault);
+  //   console.log("metaId (", firstAfterVault, "): ", metaId);
+  //   expect(metaId).not.equal(firstAfterVault.toString());
+  //   const tokenURI = await testSC.tokenURI(firstAfterVault);
+  //   console.log("tokenURI (", firstAfterVault, "): ", tokenURI);
+  //   expect(tokenURI).contain(baseURI);
+  // });
 });
 
 async function signWhitelist(chainId: number, contractAddress: string, whitelistKey: SignerWithAddress, mintingAddress: string): Promise<string> {

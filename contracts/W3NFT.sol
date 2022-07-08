@@ -3,7 +3,6 @@ pragma solidity ^0.8.9;
 
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "./TimeMint.sol";
@@ -33,6 +32,7 @@ contract W3NFT is
     uint256 private sReqId;
     uint256 public seed;
     bool public revealed;
+    bool public constant qBaseMint = false;
 
     constructor(
         string memory name,
@@ -63,9 +63,7 @@ contract W3NFT is
                 require(isEIP712Signed(signature), "Not whitelisted");
                 _setAux(msg.sender, uint64(_getAux(msg.sender) + amount));
             }
-            if (_saleState == SaleState.PublicOn) {
-                if (qBaseMint) require(isEIP712Signed(signature), "Not Queued");
-            }
+            if (_saleState == SaleState.PublicOn && qBaseMint) require(isEIP712Signed(signature), "Not queued");
         }
         _mint(msg.sender, amount);
     }
@@ -228,5 +226,4 @@ contract W3NFT is
     function privateMinted(address wallet) public view returns (uint256) {
         return _getAux(wallet);
     }
-
 }

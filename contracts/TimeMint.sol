@@ -31,7 +31,6 @@ contract TimeMint is Ownable {
 
     bool public privateDA;
     bool public publicDA;
-    bool public qBaseMint;
 
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 public constant MAX_PRIVATE = 6800;
@@ -50,14 +49,14 @@ contract TimeMint is Ownable {
     uint256 public maxReserve = 200;
 
     function enablePrivate(uint256 _beginTime, uint256 _minLong) external onlyOwner {
-        require(_beginTime > block.timestamp, "begin time must in future");
+        // require(_beginTime > block.timestamp, "begin time must in future");
         require(_minLong > 0, "minutes long must > 0");
         salePhase = SalePhase.Private;
         privateSale = SaleConfig(_beginTime, _beginTime + (_minLong*60));
     }
 
     function enablePublic(uint256 _beginTime, uint256 _minLong) external onlyOwner {
-        require(_beginTime > block.timestamp, "begin time must in future");
+        // require(_beginTime > block.timestamp, "begin time must in future");
         require(_minLong > 0, "minutes long must > 0");
         salePhase = SalePhase.Public;
         publicSale = SaleConfig(_beginTime, _beginTime + (_minLong*60));
@@ -106,10 +105,6 @@ contract TimeMint is Ownable {
         maxReserve = reserve;
     }
     
-    function toggleQueueBaseMint() external onlyOwner {
-        qBaseMint = !qBaseMint;
-    }
-
     function setCloseSale() external onlyOwner {
         saleState = SaleState.Close;
     }
