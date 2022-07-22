@@ -43,6 +43,12 @@ const config: HardhatUserConfig = {
       gas: 2500000, // gaslimit can be update but recommend not lower
       gasPrice: 2000000000, // 50000000000 = 500 gwei, can be update but recommend not lower
     },
+    goerli: {
+      url: process.env.GOERLI_URL || "",
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      gas: 2500000, // gaslimit can be update but recommend not lower
+      gasPrice: 2000000000, // 50000000000 = 500 gwei, can be update but recommend not lower
+    },
     mainnet: {
       url: process.env.ETHEREUM_URL || "",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
