@@ -83,7 +83,7 @@ describe("W3NFT", () => {
     const curPhase = await testSC.salePhase();
     console.log("current phase:", curPhase);
 
-    await expect(testSC.connect(owner).airdrop([other.address], reserved.add(1))).to.be.revertedWith("Insufficient reserve");
+    await expect(testSC.connect(owner).airdrop([other.address], reserved.add(1))).to.be.revertedWith("InvalidValue");
   });
 
   it("pass> airdrop from allow sender", async () => {
@@ -127,7 +127,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
   });
 
   it("fail> sale not available due to before start time", async () => {
@@ -162,7 +162,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
   });
 
   it("fail> whitelist not enable", async () => {
@@ -186,7 +186,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Signed not enabled");
+    ).to.be.revertedWith("SignedNotEnabled");
   });
 
   it("fail> not whitelist/invalid signature", async () => {
@@ -210,7 +210,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Not whitelisted");
+    ).to.be.revertedWith("InvalidSignature");
   });
 
   it("fail> exceed transaction limits", async () => {
@@ -235,7 +235,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("fail> exceed max supply", async () => {
@@ -258,7 +258,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("pass> mint 1 token whitelist", async () => {
@@ -302,7 +302,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(1),
       })
-    ).to.be.revertedWith("Insufficient funds");
+    ).to.be.revertedWith("InvalidValue");
   });
 
   it("pass> mint 2 tokens whitelist", async () => {
@@ -347,7 +347,7 @@ describe("W3NFT", () => {
       testSC.connect(addr1).mintToken(wantMint, addr1Sig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("fail> sale not available due to after end block", async () => {
@@ -371,7 +371,7 @@ describe("W3NFT", () => {
       testSC.connect(other).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
   });
 
   it("fail> Exceed private sale limit", async () => {
@@ -418,7 +418,7 @@ describe("W3NFT", () => {
       testSC.connect(owner).mintToken(wantMint, ownerSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("pass> private sale soldout", async () => {
@@ -455,7 +455,7 @@ describe("W3NFT", () => {
       testSC.connect(other).mintToken(BigNumber.from(1), otherSig, {
         value: mintPrice.mul(1),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
 
     increaseTime(1 * 60);
 
@@ -491,7 +491,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
   });
 
   it("fail> sale not available due to before start time", async () => {
@@ -527,7 +527,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
   });
 
   it("fail> exceed transaction limits", async () => {
@@ -552,7 +552,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("pass> mint 1 token public", async () => {
@@ -598,7 +598,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(1),
       })
-    ).to.be.revertedWith("Insufficient funds");
+    ).to.be.revertedWith("InvalidValue");
   });
 
   it("pass> mint 2 tokens public", async () => {
@@ -655,7 +655,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("fail> sale not available due to after end block", async () => {
@@ -680,7 +680,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
   });
 
   it("fail> exceed max supply", async () => {
@@ -731,7 +731,7 @@ describe("W3NFT", () => {
       testSC.connect(addr2).mintToken(wantMint, otherSig, {
         value: mintPrice.mul(wantMint),
       })
-    ).to.be.revertedWith("Exceed limit");
+    ).to.be.revertedWith("ExceedLimit");
   });
 
   it("pass> public sale soldout", async () => {
@@ -767,7 +767,7 @@ describe("W3NFT", () => {
       testSC.connect(other).mintToken(BigNumber.from(1), otherSig, {
         value: mintPrice.mul(1),
       })
-    ).to.be.revertedWith("Sale not available");
+    ).to.be.revertedWith("SaleNotAvailable");
 
     increaseTime(1 * 60);
 
@@ -786,7 +786,7 @@ describe("W3NFT", () => {
     const block = await ethers.provider.getBlock(blockNum);
     const curTime = block.timestamp;
     console.log("current time:", BigNumber.from(curTime));
-    await expect(testSC.connect(owner).withdraw(other.address)).to.be.revertedWith("Only team wallet allow");
+    await expect(testSC.connect(owner).withdraw(other.address)).to.be.revertedWith("InvalidAddress");
   });
 
   it("pass> Release to allow wallet", async () => {
@@ -810,8 +810,8 @@ describe("W3NFT", () => {
     const blockNum = await ethers.provider.getBlockNumber();
     const block = await ethers.provider.getBlock(blockNum);
     const curTime = block.timestamp;
-    const preURI = "https://gateway.pinata.cloud/ipfs/QmPUHWLrMCyWtLzBKG9nHWzm3Mmyz8wSHvEcTTuggvmnne";
-    const baseURI = "https://gateway.pinata.cloud/ipfs/QmZwj1Td1moto6w728LhDMcEZvrAK6DGAoC8Cftq5W5ojP/";
+    const preURI = "https://cf-ipfs.com/ipfs/QmPUHWLrMCyWtLzBKG9nHWzm3Mmyz8wSHvEcTTuggvmnne";
+    const baseURI = "https://cf-ipfs.com/ipfs/QmZwj1Td1moto6w728LhDMcEZvrAK6DGAoC8Cftq5W5ojP/";
     console.log("current time:", BigNumber.from(curTime));
     await testSC.connect(owner).setPreURI(preURI);
     await testSC.connect(owner).setBaseURI(baseURI);

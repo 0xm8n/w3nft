@@ -16,6 +16,14 @@ contract W3NFT is
 {
     using Address for address;
 
+    error InvalidAddress(string variable, address addr);
+    error ContractNotAllowed();
+    error SaleNotAvailable();
+    error InvalidSignature();
+    error ExceedLimit(uint256 value);
+    error MetadataFreezed();
+    error SeedAlreadyRecieved();
+
     struct chainlinkParams {
         address coordinator;
         bytes32 keyHash;
@@ -47,43 +55,29 @@ contract W3NFT is
         keyHash = chainlink.keyHash;
         sSubId = chainlink.subId;
         teamWallet = wallet;
+        // _mintERC2309(wallet, maxReserve);
+        // reserveMinted += maxReserve;
     }
 
     function mintToken(uint256 amount, bytes calldata signature)
         external payable
     {
-        require(!msg.sender.isContract(), "Contract is not allowed");
+        if(msg.sender.isContract()) revert ContractNotAllowed();
         SaleState _saleState = getState();
-        require( _saleState == SaleState.PrivateOn || _saleState == SaleState.PublicOn, "Sale not available");
+        if( _saleState != SaleState.PrivateOn && _saleState != SaleState.PublicOn) revert SaleNotAvailable();
         unchecked {
-            require(isTxValid(msg.sender, amount), "Exceed limit");
-            require(msg.value >= amount * priceByMode(), "Insufficient funds");
-
+            if(!isTxValid(msg.sender, amount)) revert ExceedLimit(amount);
+            if(msg.value < amount * priceByMode()) revert InvalidValue("msg.value", msg.value);
             if (_saleState == SaleState.PrivateOn) {
-                require(isEIP712Signed(signature), "Not whitelisted");
+                if(!isEIP712Signed(signature)) revert InvalidSignature();
+                _setAux(msg.sender, uint64(_getAux(msg.sender) + amount*100000));
+            }
+            if (_saleState == SaleState.PublicOn) {
+                if(qBaseMint && !isEIP712Signed(signature)) revert InvalidSignature();
                 _setAux(msg.sender, uint64(_getAux(msg.sender) + amount));
             }
-            if (_saleState == SaleState.PublicOn && qBaseMint) require(isEIP712Signed(signature), "Not queued");
         }
         _mint(msg.sender, amount);
-    }
-    
-    function airdrop(address[] memory addresses, uint256 amount) external onlyOwner {
-        unchecked {
-            uint256 totalAirdrop = addresses.length * amount;
-            require(
-                reserveMinted + totalAirdrop <= maxReserve,
-                "Insufficient reserve"
-            );
-            require(
-                _totalMinted() + totalAirdrop <= MAX_SUPPLY,
-                "Exceed max supply"
-            );
-            reserveMinted += totalAirdrop;
-        }
-        for (uint256 i = 0; i < addresses.length; ++i) {
-            _mint(addresses[i], amount);
-        }
     }
 
     function setBaseURI(string memory uri) external onlyOwner {
@@ -91,7 +85,7 @@ contract W3NFT is
     }
 
     function reveal() external onlyOwner {
-        require(seed > 0, "Random seed not recieved");
+        if(seed == 0) revert InvalidValue("seed", seed);
         revealed = true;
     }
 
@@ -100,8 +94,8 @@ contract W3NFT is
     }
 
     function randomSeed(uint256 randomNum) external onlyOwner {
-        require(!revealed, "Metadata is freezed");
-        require(seed == 0, "Random seed already recieved");
+        if(revealed) revert MetadataFreezed();
+        if(seed != 0) revert InvalidValue("seed", seed);
         seed = uint256(keccak256(
             abi.encode(
                 block.timestamp,
@@ -114,7 +108,7 @@ contract W3NFT is
     }
 
     function requestRandomWords() external onlyOwner {
-        require(!revealed, "Metadata is freezed");
+        if(revealed) revert MetadataFreezed();
         sReqId = COORDINATOR.requestRandomWords(
         keyHash,
         sSubId,
@@ -131,9 +125,21 @@ contract W3NFT is
         if(!revealed) seed = randomWords[0];
     }
 
-    function withdraw(address wallet) external onlyOwner {
-        require(wallet == teamWallet, "Only team wallet allow");
-        payable(wallet).transfer(address(this).balance);
+    function withdraw() external onlyOwner {
+        if(teamWallet == address(0)) revert InvalidAddress("teamWallet", teamWallet);
+        payable(teamWallet).transfer(address(this).balance);
+    }
+
+    function airdrop(address[] memory addresses, uint256 amount) external onlyOwner {
+        unchecked {
+            uint256 totalAirdrop = addresses.length * amount;
+            if(reserveMinted + totalAirdrop > maxReserve) revert InvalidValue("total amount", addresses.length * amount);
+            if(_totalMinted() + totalAirdrop > MAX_SUPPLY) revert ExceedLimit(addresses.length * amount);
+            reserveMinted += totalAirdrop;
+        }
+        for (uint256 i = 0; i < addresses.length; ++i) {
+            _mint(addresses[i], amount);
+        }
     }
 
     function setTeamWallet(address wallet) external onlyOwner {
@@ -143,12 +149,12 @@ contract W3NFT is
     function isTxValid(address wallet, uint256 amount) public view returns (bool) {
         if(salePhase == SalePhase.Private){
             if(amount > maxPrivateTx) return false;
-            if(_getAux(wallet) + amount > maxPrivateWallet) return false;
+            if(privateMinted(wallet) + amount > maxPrivateWallet) return false;
             if(_totalMinted() - reserveMinted + amount > MAX_PRIVATE) return false;
         }
         if(salePhase == SalePhase.Public){
             if(amount > maxPublicTx) return false;
-            if(_numberMinted(wallet) - _getAux(wallet) + amount > maxPublicWallet) return false;
+            if(publicMinted(wallet) + amount > maxPublicWallet) return false;
             if(_totalMinted() - reserveMinted + maxReserve + amount > MAX_SUPPLY) return false;
         }
         return true;
@@ -192,7 +198,7 @@ contract W3NFT is
         uint256 maxSupply = MAX_SUPPLY;
         uint256 vaultReserve = VAULT_RESERVE;
         if (msg.sender != owner()) {
-            require(id <= _totalMinted(), "Not existed");
+            if(id > _totalMinted()) revert InvalidValue("id", id);
         }
         if (randSeed == 0) return "pre";
 
@@ -201,7 +207,7 @@ contract W3NFT is
             metadata[i] = i;
         }
         for (uint256 j = vaultReserve+1; j <= maxSupply ; ++j) {
-            uint256 k = ((randSeed/j) % maxSupply)+1;
+            uint256 k = (uint256(keccak256(abi.encode(j,randSeed))) % maxSupply)+1;
             if(k > vaultReserve){
                 (metadata[j], metadata[k]) = (metadata[k], metadata[j]);
             }
@@ -214,8 +220,7 @@ contract W3NFT is
         return bytes(baseURI).length != 0 && revealed ? string(
             abi.encodePacked(
                 baseURI,
-                metaId(tokenId),
-                ".json"
+                metaId(tokenId)
             )) : preURI;
     }
 
@@ -224,6 +229,10 @@ contract W3NFT is
     }
 
     function privateMinted(address wallet) public view returns (uint256) {
-        return _getAux(wallet);
+        return _getAux(wallet) / 100000;
+    }
+
+    function publicMinted(address wallet) public view returns (uint256) {
+        return _getAux(wallet) % 100000;
     }
 }

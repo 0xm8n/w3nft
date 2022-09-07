@@ -4,6 +4,9 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TimeMint is Ownable {
+
+    error InvalidValue(string variable, uint256 value);
+
     enum SaleState {
         NotStarted,
         PrivateOn,
@@ -49,15 +52,15 @@ contract TimeMint is Ownable {
     uint256 public maxReserve = 200;
 
     function enablePrivate(uint256 _beginTime, uint256 _minLong) external onlyOwner {
-        // require(_beginTime > block.timestamp, "begin time must in future");
-        require(_minLong > 0, "minutes long must > 0");
+        if(_beginTime <= block.timestamp) revert InvalidValue("_beginTime", _beginTime);
+        if(_minLong == 0) revert InvalidValue("_minLong", _minLong);
         salePhase = SalePhase.Private;
         privateSale = SaleConfig(_beginTime, _beginTime + (_minLong*60));
     }
 
     function enablePublic(uint256 _beginTime, uint256 _minLong) external onlyOwner {
-        // require(_beginTime > block.timestamp, "begin time must in future");
-        require(_minLong > 0, "minutes long must > 0");
+        if(_beginTime <= block.timestamp) revert InvalidValue("_beginTime", _beginTime);
+        if(_minLong == 0) revert InvalidValue("_minLong", _minLong);
         salePhase = SalePhase.Public;
         publicSale = SaleConfig(_beginTime, _beginTime + (_minLong*60));
     }
@@ -89,15 +92,15 @@ contract TimeMint is Ownable {
     function setDAParams(uint256 _startPrice, uint256 _endPrice, uint256 _reducePrice) 
         external onlyOwner
     {
-        require(_reducePrice < _startPrice, "reduce price > start price");
-        require(_endPrice < _startPrice, "end price > start price");
+        if(_reducePrice >= _startPrice) revert InvalidValue("_reducePrice", _reducePrice);
+        if(_endPrice >= _startPrice) revert InvalidValue("_endPrice", _endPrice);
         endPrice = _endPrice;
         reducePrice = _reducePrice;
         startPrice = _startPrice;
     }
 
     function setReduceTime(uint256 minute) external onlyOwner {
-        require(minute > 0, "minute must > 0");
+        if(minute == 0) revert InvalidValue("minute", minute);
         reduceTime = minute;
     }
     
