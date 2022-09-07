@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EIP712Signed is Ownable {
     using ECDSA for bytes32;
+
+    error SignedNotEnabled();
     address private signingKey = address(0);
     bytes32 private DOMAIN_SEPARATOR;
     bytes32 private constant MINTER_TYPEHASH = keccak256("Minter(address wallet)");
@@ -37,7 +39,7 @@ contract EIP712Signed is Ownable {
         view
         returns (bool)
     {
-        require(signingKey != address(0), "Signed not enabled");
+        if(signingKey == address(0)) revert SignedNotEnabled();
         return getEIP712Recover(signature) == signingKey;
     }
 

@@ -124,22 +124,24 @@ contract TimeMint is Ownable {
         SalePhase phase = salePhase;
         uint256 blockTime = block.timestamp;
         uint256 passedTime = 0;
-        if (phase == SalePhase.Private) {
-            if (!privateDA) return privatePrice;
-            uint256 beginTime = privateSale.beginTime;
-            if (beginTime > 0 && blockTime >= beginTime) {
-                passedTime = blockTime - privateSale.beginTime;
+        unchecked {
+            if (phase == SalePhase.Private) {
+                if (!privateDA) return privatePrice;
+                uint256 beginTime = privateSale.beginTime;
+                if (beginTime > 0 && blockTime >= beginTime) {
+                    passedTime = blockTime - privateSale.beginTime;
+                }
             }
-        }
-        if (phase == SalePhase.Public) {
-            if (!publicDA) return endPrice;
-            uint256 beginTime = publicSale.beginTime;
-            if (beginTime > 0 && blockTime >= beginTime) {
-                passedTime = blockTime - publicSale.beginTime;
+            if (phase == SalePhase.Public) {
+                if (!publicDA) return endPrice;
+                uint256 beginTime = publicSale.beginTime;
+                if (beginTime > 0 && blockTime >= beginTime) {
+                    passedTime = blockTime - publicSale.beginTime;
+                }
             }
+            uint256 discountPrice = (passedTime/(reduceTime*60)) * reducePrice;
+            if (startPrice - endPrice < discountPrice) return endPrice;
+            return startPrice - discountPrice;
         }
-        uint256 discountPrice = (passedTime/(reduceTime*60)) * reducePrice;
-        if (startPrice - endPrice < discountPrice) return endPrice;
-        return startPrice - discountPrice;
     }
 }

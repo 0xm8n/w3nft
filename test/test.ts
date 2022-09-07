@@ -780,22 +780,13 @@ describe("W3NFT", () => {
   // #################################################
   // Release Fund
   // #################################################
-  it("fail> Release to others wallet", async () => {
-    console.log("###### START RELEASE FUND TEST ##########");
-    const blockNum = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNum);
-    const curTime = block.timestamp;
-    console.log("current time:", BigNumber.from(curTime));
-    await expect(testSC.connect(owner).withdraw(other.address)).to.be.revertedWith("InvalidAddress");
-  });
-
   it("pass> Release to allow wallet", async () => {
     const blockNum = await ethers.provider.getBlockNumber();
     const block = await ethers.provider.getBlock(blockNum);
     const curTime = block.timestamp;
     console.log("current time:", BigNumber.from(curTime));
     const fundBefore = await owner.getBalance();
-    await testSC.connect(owner).withdraw(owner.address);
+    await testSC.connect(owner).withdraw();
     const fundAfter = await owner.getBalance();
     console.log("fund before:", BigNumber.from(fundBefore));
     console.log("fund after:", BigNumber.from(fundAfter));
@@ -877,7 +868,7 @@ describe("W3NFT", () => {
       expect(metaId).equal(i.toString());
       const tokenURI = await testSC.tokenURI(i);
       console.log("tokenURI (", i, "): ", tokenURI);
-      expect(tokenURI).equal(`${baseURI}${i.toString()}.json`);
+      expect(tokenURI).equal(`${baseURI}${i.toString()}`);
     }
   });
 

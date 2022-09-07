@@ -147,23 +147,27 @@ contract W3NFT is
     }
     
     function isTxValid(address wallet, uint256 amount) public view returns (bool) {
-        if(salePhase == SalePhase.Private){
-            if(amount > maxPrivateTx) return false;
-            if(privateMinted(wallet) + amount > maxPrivateWallet) return false;
-            if(_totalMinted() - reserveMinted + amount > MAX_PRIVATE) return false;
-        }
-        if(salePhase == SalePhase.Public){
-            if(amount > maxPublicTx) return false;
-            if(publicMinted(wallet) + amount > maxPublicWallet) return false;
-            if(_totalMinted() - reserveMinted + maxReserve + amount > MAX_SUPPLY) return false;
+        unchecked {
+            if(salePhase == SalePhase.Private){
+                if(amount > maxPrivateTx) return false;
+                if(privateMinted(wallet) + amount > maxPrivateWallet) return false;
+                if(_totalMinted() - reserveMinted + amount > MAX_PRIVATE) return false;
+            }
+            if(salePhase == SalePhase.Public){
+                if(amount > maxPublicTx) return false;
+                if(publicMinted(wallet) + amount > maxPublicWallet) return false;
+                if(_totalMinted() - reserveMinted + maxReserve + amount > MAX_SUPPLY) return false;
+            }
         }
         return true;
     }
 
     function isSoldOut() public view returns (bool) {
         SalePhase phase = salePhase;
-        if (phase == SalePhase.Private) return _totalMinted() - reserveMinted >= MAX_PRIVATE;
-        if (phase == SalePhase.Public) return _totalMinted() - reserveMinted + maxReserve >= MAX_SUPPLY;
+        unchecked {
+            if (phase == SalePhase.Private) return _totalMinted() - reserveMinted >= MAX_PRIVATE;
+            if (phase == SalePhase.Public) return _totalMinted() - reserveMinted + maxReserve >= MAX_SUPPLY;
+        }
         return false;
     }
 
@@ -197,22 +201,24 @@ contract W3NFT is
         uint256 randSeed = seed;
         uint256 maxSupply = MAX_SUPPLY;
         uint256 vaultReserve = VAULT_RESERVE;
-        if (msg.sender != owner()) {
-            if(id > _totalMinted()) revert InvalidValue("id", id);
-        }
-        if (randSeed == 0) return "pre";
-
-        uint256[] memory metadata = new uint256[](maxSupply+1);
-        for (uint256 i = 1; i <= maxSupply ; ++i) {
-            metadata[i] = i;
-        }
-        for (uint256 j = vaultReserve+1; j <= maxSupply ; ++j) {
-            uint256 k = (uint256(keccak256(abi.encode(j,randSeed))) % maxSupply)+1;
-            if(k > vaultReserve){
-                (metadata[j], metadata[k]) = (metadata[k], metadata[j]);
+        unchecked {
+            if (msg.sender != owner()) {
+                if(id > _totalMinted()) revert InvalidValue("id", id);
             }
+            if (randSeed == 0) return "pre";
+
+            uint256[] memory metadata = new uint256[](maxSupply+1);
+            for (uint256 i = 1; i <= maxSupply ; ++i) {
+                metadata[i] = i;
+            }
+            for (uint256 j = vaultReserve+1; j <= maxSupply ; ++j) {
+                uint256 k = (uint256(keccak256(abi.encode(j,randSeed))) % maxSupply)+1;
+                if(k > vaultReserve){
+                    (metadata[j], metadata[k]) = (metadata[k], metadata[j]);
+                }
+            }
+            return _toString(metadata[id]);
         }
-        return _toString(metadata[id]);
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
@@ -229,10 +235,14 @@ contract W3NFT is
     }
 
     function privateMinted(address wallet) public view returns (uint256) {
-        return _getAux(wallet) / 100000;
+        unchecked {
+            return _getAux(wallet) / 100000;
+        }
     }
 
     function publicMinted(address wallet) public view returns (uint256) {
-        return _getAux(wallet) % 100000;
+        unchecked {
+            return _getAux(wallet) % 100000;
+        }
     }
 }
